@@ -1,6 +1,7 @@
 import { HRDiagram } from './components/HRDiagram/HRDiagram';
 import { ControlPanel } from './components/ControlPanel';
 import { EducationalPanel } from './components/EducationalPanel';
+import { AboutHRDiagram } from './components/AboutHRDiagram';
 import { InfoPanel } from './components/InfoPanel';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -48,6 +49,7 @@ function App() {
             activeSpectralClasses={activeSpectralClasses}
           />
           <EducationalPanel />
+          <AboutHRDiagram />
         </div>
 
         {/* Right Sidebar */}

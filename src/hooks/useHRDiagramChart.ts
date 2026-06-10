@@ -144,11 +144,10 @@ export function useHRDiagramChart(
       .attr('stroke-width', 1.5)
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) {
-        const [x, y] = d3.pointer(event);
         onTooltip({
           visible: true,
-          x: x + margin.left,
-          y: y + margin.top,
+          x: event.clientX,
+          y: event.clientY,
           star: d,
         });
 
@@ -158,6 +157,14 @@ export function useHRDiagramChart(
           .attr('r', 7)
           .attr('opacity', 1)
           .attr('stroke-width', 2.5);
+      })
+      .on('mousemove', function (event, d) {
+        onTooltip({
+          visible: true,
+          x: event.clientX,
+          y: event.clientY,
+          star: d,
+        });
       })
       .on('mouseleave', function () {
         const d = d3.select(this).datum() as any;
@@ -175,6 +182,15 @@ export function useHRDiagramChart(
     if (modelStar) {
       const modelX = tempScale(modelStar.temperature);
       const modelY = luminosityScale(modelStar.luminosity);
+
+      const modelStarDatum: Star = {
+        name: `Model Star (M=${modelStar.mass.toFixed(2)} M☉)`,
+        temperature: modelStar.temperature,
+        luminosity: modelStar.luminosity,
+        radius: modelStar.radius,
+        spectralClass: modelStar.spectralClass,
+        category: 'main-sequence',
+      };
 
       g.selectAll('.model-star-glow').remove();
       g.append('circle')
@@ -209,25 +225,25 @@ export function useHRDiagramChart(
         .attr('stroke-width', 2)
         .style('cursor', 'help')
         .on('mouseenter', function (event) {
-          const [x, y] = d3.pointer(event);
           onTooltip({
             visible: true,
-            x: x + margin.left,
-            y: y + margin.top,
-            star: {
-              name: `Model Star (M=${modelStar.mass.toFixed(2)} M☉)`,
-              temperature: modelStar.temperature,
-              luminosity: modelStar.luminosity,
-              radius: modelStar.radius,
-              spectralClass: modelStar.spectralClass,
-              category: 'main-sequence',
-            },
+            x: event.clientX,
+            y: event.clientY,
+            star: modelStarDatum,
           });
           d3.select(this)
             .transition()
             .duration(150)
             .attr('r', 8)
             .attr('stroke-width', 2.5);
+        })
+        .on('mousemove', function (event) {
+          onTooltip({
+            visible: true,
+            x: event.clientX,
+            y: event.clientY,
+            star: modelStarDatum,
+          });
         })
         .on('mouseleave', function () {
           onTooltip({ visible: false, x: 0, y: 0, star: null });

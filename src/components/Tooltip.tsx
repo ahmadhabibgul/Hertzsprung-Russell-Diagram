@@ -20,23 +20,35 @@ export const Tooltip = React.memo(function Tooltip({
 }: TooltipProps) {
   const tooltipWidth = 280;
   const tooltipHeight = 200;
-  const padding = 12;
+  const offset = 14;
+  const edgePadding = 8;
 
   const position = useMemo(() => {
     if (!visible) return { left: 0, top: 0 };
 
-    let left = x + padding;
-    let top = y + padding;
+    // x/y are viewport coordinates (event.clientX/clientY), matching the
+    // tooltip's `position: fixed`. Offset so the tooltip sits just beside the
+    // cursor instead of underneath it.
+    let left = x + offset;
+    let top = y + offset;
 
-    // Adjust if tooltip goes off right edge
-    if (left + tooltipWidth > viewportWidth) {
-      left = Math.max(0, x - tooltipWidth - padding);
+    // Flip to the other side of the cursor if it would overflow the viewport.
+    if (left + tooltipWidth > viewportWidth - edgePadding) {
+      left = x - tooltipWidth - offset;
+    }
+    if (top + tooltipHeight > viewportHeight - edgePadding) {
+      top = y - tooltipHeight - offset;
     }
 
-    // Adjust if tooltip goes off bottom edge
-    if (top + tooltipHeight > viewportHeight) {
-      top = Math.max(0, y - tooltipHeight - padding);
-    }
+    // Clamp so the tooltip always stays fully within the viewport.
+    left = Math.min(
+      Math.max(edgePadding, left),
+      Math.max(edgePadding, viewportWidth - tooltipWidth - edgePadding),
+    );
+    top = Math.min(
+      Math.max(edgePadding, top),
+      Math.max(edgePadding, viewportHeight - tooltipHeight - edgePadding),
+    );
 
     return { left, top };
   }, [visible, x, y, viewportWidth, viewportHeight]);
@@ -47,7 +59,7 @@ export const Tooltip = React.memo(function Tooltip({
 
   return (
     <div
-      className={`pointer-events-none fixed rounded-lg border px-3 py-2 text-sm shadow-xl transition-opacity duration-150 ${
+      className={`pointer-events-none fixed z-50 rounded-lg border px-3 py-2 text-sm shadow-xl transition-opacity duration-150 ${
         isModelStar
           ? 'border-cyan-400/60 bg-cyan-950/95'
           : 'border-cyan-400/40 bg-slate-950/95'
