@@ -28,6 +28,7 @@ export function useHRDiagramChart(
   stars: Star[],
   modelStar: ModelStar | undefined,
   onTooltip: (tooltip: TooltipState) => void,
+  searchQuery = '',
   config: Partial<D3ChartConfig> = {},
 ) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
@@ -59,6 +60,13 @@ export function useHRDiagramChart(
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
+
+    // Clear any stale tooltip when the chart re-renders (e.g. filters change),
+    // and hide the tooltip whenever the pointer leaves the chart entirely.
+    const hideTooltip = () =>
+      onTooltip({ visible: false, x: 0, y: 0, star: null });
+    hideTooltip();
+    svg.on('mouseleave', hideTooltip);
 
     // Add background
     svg
@@ -130,6 +138,19 @@ export function useHRDiagramChart(
       .style('font-weight', '500')
       .text('Luminosity (L☉) — log scale');
 
+    // Search highlight/dim: matching stars stay fully visible (and are
+    // emphasised), non-matching stars are dimmed but kept on the chart for
+    // context. When the query is empty every star renders normally.
+    const query = searchQuery.trim().toLowerCase();
+    const hasSearch = query !== '';
+    const isMatch = (d: Star) => !hasSearch || d.name.toLowerCase().includes(query);
+    const restingOpacity = (d: Star) =>
+      isMatch(d) ? getCategoryOpacity(d.category) : 0.1;
+    const restingRadius = (d: Star) => (hasSearch && isMatch(d) ? 6 : 5);
+    const restingStroke = (d: Star) =>
+      hasSearch && isMatch(d) ? '#7dd3fc' : 'rgba(255,255,255,0.18)';
+    const restingStrokeWidth = (d: Star) => (hasSearch && isMatch(d) ? 2.5 : 1.5);
+
     // Plot stars
     g.selectAll('.star-point')
       .data(stars, (d: any) => d.name)
@@ -137,11 +158,11 @@ export function useHRDiagramChart(
       .attr('class', 'star-point')
       .attr('cx', (d) => tempScale(d.temperature))
       .attr('cy', (d) => luminosityScale(d.luminosity))
-      .attr('r', 5)
+      .attr('r', restingRadius)
       .attr('fill', (d) => getSpectralColor(d.spectralClass))
-      .attr('opacity', (d) => getCategoryOpacity(d.category))
-      .attr('stroke', 'rgba(255,255,255,0.18)')
-      .attr('stroke-width', 1.5)
+      .attr('opacity', restingOpacity)
+      .attr('stroke', restingStroke)
+      .attr('stroke-width', restingStrokeWidth)
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) {
         onTooltip({
@@ -167,15 +188,16 @@ export function useHRDiagramChart(
         });
       })
       .on('mouseleave', function () {
-        const d = d3.select(this).datum() as any;
-        onTooltip({ visible: false, x: 0, y: 0, star: null });
+        const d = d3.select(this).datum() as Star;
+        hideTooltip();
 
         d3.select(this)
           .transition()
           .duration(150)
-          .attr('r', 5)
-          .attr('opacity', getCategoryOpacity(d.category))
-          .attr('stroke-width', 1.5);
+          .attr('r', restingRadius(d))
+          .attr('opacity', restingOpacity(d))
+          .attr('stroke', restingStroke(d))
+          .attr('stroke-width', restingStrokeWidth(d));
       });
 
     // Plot model star if provided
@@ -254,5 +276,5 @@ export function useHRDiagramChart(
             .attr('stroke-width', 2);
         });
     }
-  }, [stars, modelStar, onTooltip, chartWidth, chartHeight, margin]);
+  }, [stars, modelStar, onTooltip, searchQuery, chartWidth, chartHeight, margin]);
 }
