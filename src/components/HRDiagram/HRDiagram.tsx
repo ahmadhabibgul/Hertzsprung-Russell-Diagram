@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, memo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, memo } from 'react';
 import type { Star } from '../../data/stars';
 import type { ModelStar } from '../../utils/physics';
 import { Tooltip } from '../Tooltip';
@@ -38,17 +38,25 @@ function HRDiagramComponent({
     height: window.innerHeight,
   });
 
-  // Filter stars based on search and spectral class
-  const filteredStars = stars.filter((star) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      star.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesClass =
-      !activeSpectralClasses ||
-      activeSpectralClasses.size === 0 ||
-      activeSpectralClasses.has(star.spectralClass.charAt(0));
-    return matchesSearch && matchesClass;
-  });
+  // Filter stars based on search and spectral class. Memoized so the array
+  // reference is stable across tooltip-driven re-renders; otherwise every
+  // hover state update would produce a new array, re-running the D3 effect
+  // (which wipes and redraws the SVG) and destroying the hovered circle
+  // mid-hover — causing the tooltip to flicker/unmount continuously.
+  const filteredStars = useMemo(
+    () =>
+      stars.filter((star) => {
+        const matchesSearch =
+          searchQuery === '' ||
+          star.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClass =
+          !activeSpectralClasses ||
+          activeSpectralClasses.size === 0 ||
+          activeSpectralClasses.has(star.spectralClass.charAt(0));
+        return matchesSearch && matchesClass;
+      }),
+    [stars, searchQuery, activeSpectralClasses],
+  );
 
   const handleTooltip = useCallback((tooltipState: TooltipState) => {
     setTooltip(tooltipState);
