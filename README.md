@@ -15,4 +15,4 @@ An interactive Hertzsprung–Russell (HR) Diagram built using React, TypeScript,
 - React
 - TypeScript
 - Vite
-- SVG/D3 (if applicable)
+- SVG/D3
