@@ -60,6 +60,14 @@ export function useHRDiagramChart(
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
+    // Clear any stale tooltip whenever the chart re-renders (e.g. filters
+    // change and the hovered circle is removed without firing mouseleave), and
+    // hide it whenever the pointer leaves the chart area entirely.
+    const hideTooltip = () =>
+      onTooltip({ visible: false, x: 0, y: 0, star: null });
+    hideTooltip();
+    svg.on('mouseleave', hideTooltip);
+
     // Add background
     svg
       .append('rect')
@@ -132,7 +140,7 @@ export function useHRDiagramChart(
 
     // Plot stars
     g.selectAll('.star-point')
-      .data(stars, (d: any) => d.name)
+      .data(stars, (d) => (d as Star).name)
       .join('circle')
       .attr('class', 'star-point')
       .attr('cx', (d) => tempScale(d.temperature))
@@ -167,7 +175,7 @@ export function useHRDiagramChart(
         });
       })
       .on('mouseleave', function () {
-        const d = d3.select(this).datum() as any;
+        const d = d3.select(this).datum() as Star;
         onTooltip({ visible: false, x: 0, y: 0, star: null });
 
         d3.select(this)
