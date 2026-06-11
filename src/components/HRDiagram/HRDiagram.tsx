@@ -38,23 +38,22 @@ function HRDiagramComponent({
     height: window.innerHeight,
   });
 
-  // Filter stars based on search and spectral class
-  const filteredStars = stars.filter((star) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      star.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesClass =
+  // Spectral class is a hard filter (non-matching stars are removed). The
+  // search query is applied inside the chart as a highlight/dim treatment so
+  // matching stars stay visible in context rather than disappearing.
+  const visibleStars = stars.filter((star) => {
+    return (
       !activeSpectralClasses ||
       activeSpectralClasses.size === 0 ||
-      activeSpectralClasses.has(star.spectralClass.charAt(0));
-    return matchesSearch && matchesClass;
+      activeSpectralClasses.has(star.spectralClass.charAt(0))
+    );
   });
 
   const handleTooltip = useCallback((tooltipState: TooltipState) => {
     setTooltip(tooltipState);
   }, []);
 
-  useHRDiagramChart(svgRef, filteredStars, modelStar, handleTooltip);
+  useHRDiagramChart(svgRef, visibleStars, modelStar, handleTooltip, searchQuery);
 
   const handleResize = useCallback(() => {
     setViewportSize({
@@ -68,7 +67,7 @@ function HRDiagramComponent({
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
 
-  const hasNoResults = !isLoading && filteredStars.length === 0;
+  const hasNoResults = !isLoading && visibleStars.length === 0;
 
   return (
     <div className='relative rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-lg shadow-slate-950/30'>
